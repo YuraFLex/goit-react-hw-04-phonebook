@@ -1,39 +1,35 @@
-import React, { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { Box } from '../constans';
 import PhonebookFrom from './PhonebookForm';
 import Filter from './Filter';
 import PhonebookList from './PhonebookList';
 
-class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState([
+    { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+    { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+    { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+    { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+  ]);
+  const [filter, setFilter] = useState('');
 
-  componentDidMount() {
-    const contacts = localStorage.getItem('contacts');
-    const parsedContacts = JSON.parse(contacts);
+  useEffect(() => {
+    const contactsLocalStorage = localStorage.getItem('contacts');
+    const parsedContacts = JSON.parse(contactsLocalStorage);
 
-    if (parsedContacts) {
-      this.setState({
-        contacts: parsedContacts,
-      });
+    if (!parsedContacts) {
+      return;
     }
-  }
+    setContacts(parsedContacts);
+  }, []);
 
-  componentDidUpdate(prevProps, prevState) {
-    const nextContact = this.state.contacts;
-    const prevContact = prevState.contacts;
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-    if (nextContact !== prevContact) {
-      localStorage.setItem('contacts', JSON.stringify(nextContact));
-    }
-  }
-
-  addContact = data => {
+  const addContact = data => {
     const { name, number } = data;
-    const { contacts } = this.state;
 
     const contact = {
       id: nanoid(),
@@ -43,19 +39,16 @@ class App extends Component {
 
     contacts.some(contact => contact.name === name)
       ? alert(`${name} is already in contacts`)
-      : this.setState(({ contacts }) => ({
-          contacts: [contact, ...contacts],
-        }));
+      : setContacts(prevContacts => [contact, ...prevContacts]);
   };
 
-  deleteContact = id => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== id),
-    }));
+  const deleteContact = id => {
+    setContacts(prevContacts =>
+      prevContacts.filter(contact => contact.id !== id)
+    );
   };
 
-  getFilteredContacts = () => {
-    const { filter, contacts } = this.state;
+  const getFilteredContacts = () => {
     const normalizedFilter = filter.toLowerCase();
 
     return contacts.filter(contact =>
@@ -63,41 +56,36 @@ class App extends Component {
     );
   };
 
-  changeFilter = e => {
-    this.setState({ filter: e.target.value });
+  const changeFilter = e => {
+    setFilter(e.target.value);
   };
 
-  render() {
-    const { value } = this.state;
-    const addContact = this.addContact;
-    const visibleContacts = this.getFilteredContacts();
+  const visibleContacts = getFilteredContacts();
 
-    return (
-      <Box as="main">
-        <Box as="section" display="flex" justifyContent="center" py={4}>
-          <Box
-            as="div"
-            width={600}
-            bg="backgroundSecondary"
-            borderRadius="normal"
-            boxShadow="normal"
-            p={4}
-          >
-            <PhonebookFrom onSubmit={addContact} />
+  return (
+    <Box as="main">
+      <Box as="section" display="flex" justifyContent="center" py={4}>
+        <Box
+          as="div"
+          width={600}
+          bg="backgroundSecondary"
+          borderRadius="normal"
+          boxShadow="normal"
+          p={4}
+        >
+          <PhonebookFrom onSubmit={addContact} />
 
-            <Filter value={value} onChange={this.changeFilter} />
-            {this.state.contacts.length <= 0 ? (
-              <p>Add someone to your contacts</p>
-            ) : (
-              <PhonebookList
-                contacts={visibleContacts}
-                onDelContact={this.deleteContact}
-              />
-            )}
-          </Box>
+          <Filter value={filter} onChange={changeFilter} />
+          {contacts.length <= 0 ? (
+            <p>Add someone to your contacts</p>
+          ) : (
+            <PhonebookList
+              contacts={visibleContacts}
+              onDelContact={deleteContact}
+            />
+          )}
         </Box>
       </Box>
-    );
-  }
-}
-export default App;
+    </Box>
+  );
+};
